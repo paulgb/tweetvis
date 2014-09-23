@@ -1,0 +1,17 @@
+
+Visual:
+    - darken background slightly, white border around avatars
+    - thicken lines
+    - smooth curvy lines
+    - vertical scroll if goes outside page
+
+Tweet Loading:
+    - first cause all tweets to load
+
+Interaction:
+    - clickable tweets
+    - support back button (popstate?)
+
+Polish:
+    - alert if not on tweet
+
