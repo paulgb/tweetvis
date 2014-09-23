@@ -7,6 +7,48 @@ window.d3 = d3
 clog = (m) ->
     console.__proto__.log.call(console, m)
 
+backdrop = (elem) ->
+    {height, width} = elem.node().getBBox()
+    p = d3.select(elem.node().parentNode)
+    p.insert('rect', ':first-child')
+        .classed('hoverReveal', true)
+        .attr('width', width + 8)
+        .attr('height', height + 8)
+        .attr('x', '24px')
+        .attr('y', '-32px')
+        .attr('rx', 5)
+        .attr('fill', 'white')
+
+wrap = (text, width) ->
+  # adapted for CoffeeScript from http://bl.ocks.org/mbostock/7555321
+  text.each ->
+    text = d3.select this
+    words = text.text().split(/\s+/).reverse()
+    line = []
+    lineNumber = 0
+    lineHeight = 1.1 # ems
+    dy = 0
+    y = '-14px'
+    tspan = text.text(null)
+                .append("tspan")
+                .attr("x", '28px')
+                .attr("y", y)
+                .attr("dy", dy + "em")
+                .style('alignment-baseline', 'before-text')
+
+    while word = words.pop()
+        line.push(word)
+        tspan.text(line.join(" "))
+        if tspan.node().getComputedTextLength() > width
+            line.pop()
+            tspan.text(line.join(" "))
+            line = [word]
+            tspan = text.append("tspan")
+                        .attr("x", '28px')
+                        .attr("y", y)
+                        .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                        .text(word)
+
 
 class TreeBuilder
     changeCallback: null
@@ -129,13 +171,22 @@ class TweetVis
             .style('z-index', 1001)
             .attr('viewBox', "0 0 #{@width} #{@height}")
             
-        ###
-        @svg.append('defs')
-            .append('clipPath').attr('id', 'roundEdges')
-            .append('rect').attr('width', '48px').attr('height', '48px')
-            .attr('x', '-24px').attr('y', '-24px')
-            .attr('rx', 8)
-        ###
+        @svg.append('style')
+            .text('''
+            
+            #details rect.hoverCapture {
+                opacity: 0;
+            }
+
+            #details g .hoverReveal {
+                opacity: 0;
+            }
+
+            #details g:hover .hoverReveal {
+                opacity: 0.8;
+            }
+
+            ''')
 
         @svg.append('rect')
             .attr('x', -2500)
@@ -150,6 +201,10 @@ class TweetVis
         @svg.append('g')
             .attr('id', 'nodes')
 
+        @svg.append('g')
+            .attr('id', 'details')
+
+
 
     drawTree: (root) =>
         margin = @margin
@@ -160,12 +215,12 @@ class TweetVis
         nodeGroup = @svg.select('#nodes').selectAll('g')
            .data(layout, (d) -> d.id)
 
-        nodeGroup
-            .attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
 
         enterNodes = nodeGroup.enter()
                 .append('g')
-                .attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
+
+        nodeGroup
+            .attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
 
         enterNodes.append('title')
             .text((d) -> "#{d.user}: #{d.content}")
@@ -176,7 +231,6 @@ class TweetVis
                 .attr('width', '48px')
                 .attr('x', '-24px')
                 .attr('y', '-24px')
-                #.attr('clip-path', 'url(#roundEdges)')
 
         enterNodes.append('rect')
                 .attr('x', '-24px')
@@ -188,6 +242,33 @@ class TweetVis
                 .attr('rx', 5)
                 .attr('fill', 'none')
 
+
+
+        detailsGroup = @svg.select('#details').selectAll('g')
+            .data(layout, (d) -> d.id)
+
+        detailsEnter = detailsGroup.enter().append('g')
+        
+        detailsEnter.append('text')
+            .classed('hoverReveal', true)
+            .text((d) -> d.content)
+            .call(wrap, 200)
+            .call(backdrop)
+
+        detailsEnter.append('rect')
+            .classed('hoverCapture', true)
+            .attr('x', '-24px')
+            .attr('y', '-24px')
+            .attr('height', '48px')
+            .attr('width', '48px')
+            .attr('stroke', 'white')
+            .attr('stroke-width', '4px')
+            .attr('rx', 5)
+            .attr('fill', 'white')
+
+
+        detailsGroup.attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
+           
 
         edgeToPath = ({source, target}) =>
             d3.svg.line().x((d) => d.x + @margin)
