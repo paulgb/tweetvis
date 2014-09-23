@@ -1,49 +1,114 @@
 
 d3 = require 'd3'
 
+window.d3 = d3
+
 # twitter disables the console, but it's useful
-window.console.log = console.__proto__.log
+clog = (m) ->
+    console.__proto__.log.call(console, m)
+
+
+class TreeBuilder
+    changeCallback: null
+    root: null
+    idMap: {}
+
+    addNode: (node) =>
+        if 'parent' not of node
+            @root = node
+        else
+            parent = @idMap[node.parent]
+            if 'children' not of parent
+                parent.children = []
+            parent.children.push(node)
+        @idMap[node.id] = node
+        @changeCallback @root
+
+
+class TweetLoader
+    tweetCallback: null
+    doneCallback: null
+
+    getTweetTree: =>
+        @rootLocation = document.location.href
+        @addRoot()
+        @populateTweetQueue()
+        @loadNextTweet()
+
+    addRoot: =>
+        tweet = @getMainTweet()
+        @tweetCallback tweet
+
+    getMainTweet: =>
+        tweetDiv = d3.select('div.permalink-tweet')
+
+        tweet = {}
+        tweet.id = tweetDiv.attr('data-tweet-id')
+        tweet.content = tweetDiv.select('.tweet-text').text()
+        tweet.user = tweetDiv.attr('data-screen-name')
+
+        return tweet
+
+    populateTweetQueue: =>
+        # tweetQueue is a list of tweet IDs yet-to-be processed. This
+        # method is responsible for initially populating the list.
+        tweetQueue = []
+        d3.selectAll('.simple-tweet')
+          .each -> tweetQueue.push d3.select(this).attr('data-tweet-id')
+        @tweetQueue = tweetQueue
+
+
+    waitForLoad: =>
+        # wait for a tweet to load (the navigation event is initiated by
+        # the calling code) and then call processTweet
+        if document.location.href == @rootLocation
+            clog 'waiting...'
+            window.setTimeout(@waitForLoad, 1000)
+        else
+            clog 'loaded!'
+            window.setTimeout(@processTweet, 1000)
+
+
+    processTweet: =>
+        # extract data from the tweet, call the callback, and then 
+        # call back and navigate to the next tweet
+        
+        tweet = @getMainTweet()
+
+        parentTweetDiv = d3.select('#ancestors li:last-child div.simple-tweet')
+        tweet.parent = parentTweetDiv.attr 'data-tweet-id'
+
+        @tweetCallback tweet
+
+        window.history.back()
+        window.setTimeout(@loadNextTweet, 1000)
+
+
+    loadNextTweet: =>
+        # process the next tweet in the queue, with a recursive call
+        # so that eventually the whole queue will be processed
+
+        if @tweetQueue.length == 0
+            return
+
+        tweetId = @tweetQueue.shift()
+
+        tweetDiv = d3.select('div[data-tweet-id="'+tweetId+'"]')
+        
+        tweetDiv.node().click()
+
+        detailsLink = tweetDiv.select 'a.permalink-link'
+        detailsLink.node().click()
+        @waitForLoad()
+
+
+
 
 class TweetVis
     margin: 100
 
-    getTweetTree: =>
-        tweets = d3.selectAll('.tweet')
-
-        root = null
-        last_tweet = {}
-        i = 0
-
-        tweets.each ->
-            tweet = {}
-            elem = d3.select this
-            #console.log this
-            tweet.id = elem.attr 'data-tweet-id'
-            tweet.user = elem.attr 'data-screen-name'
-            tweet.content = elem.select('.tweet-text').text()
-            tweet.index = i
-            tweet.mentions = (elem.attr 'data-mentions').split ' '
-            tweet.children = []
-            console.log tweet
-
-            parent = null
-            for mention in tweet.mentions
-                if mention not of last_tweet
-                    continue
-                else if parent is null
-                    parent = last_tweet[mention]
-                else if last_tweet[mention].index > parent.index
-                    parent = last_tweet[mention]
-
-            if i == 0
-                root = tweet
-            else
-                parent.children.push tweet
-
-            ++i
-            last_tweet[tweet.user] = tweet
-        @root = root
-
+    init: =>
+        @makeSVG()
 
     makeSVG: =>
         d3.select('#tweetvis_svg').remove()
@@ -70,45 +135,57 @@ class TweetVis
             .style('fill', 'white')
 
 
-    treeLayout: =>
+    drawTree: (root) =>
+        margin = @margin
         tree = d3.layout.tree().size([@width - 2*@margin, @height - 2*@margin])
-        @layout = tree.nodes(@root)
-        @links = tree.links(@layout)
+        clog root
+        layout = tree.nodes(root)
+        clog root
+        links = tree.links(layout)
 
-
-    drawTree: =>
         nodeGroup = @svg.selectAll('.node')
-           .data(@layout)
-           .enter()
+           .data(layout, (d) -> d.id)
+
+        enterNodes = nodeGroup.enter()
                 .append('g')
+                .attr('transform', (d) -> "translate(0 0)")
+                .classed('node', true)
 
-        nodeGroup.append('title')
-            .text((d) -> d.content)
+        enterNodes.append('title')
+            .text((d) -> "#{d.user}: #{d.content}")
 
-        nodeGroup.append('circle')
-                .attr('cx', (d) => d.x + @margin)
-                .attr('cy', (d) => d.y + @margin)
+        enterNodes.append('circle')
                 .attr('r', 5)
+
+        nodeGroup.transition().delay(3000)
+            .attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
 
         edgeToPath = ({source, target}) =>
             d3.svg.line().x((d) => d.x + @margin)
                          .y((d) => d.y + @margin)
                          .interpolate('linear')([source, target])
 
-        @svg.selectAll('.path')
-           .data(@links)
+        pathGroup = @svg.selectAll('.edge')
+           .data(links, (d) -> d.target.id)
+
+        pathGroup
            .enter()
                 .append('path')
+                .classed('edge', true)
                 .attr('d', (x) -> edgeToPath(x))
                 .attr('stroke', 'blue')
+
+        pathGroup.transition().delay(3000)
+                .attr('d', (x) -> edgeToPath(x))
         
 
-    main: =>
-        @makeSVG()
-        @getTweetTree()
-        @treeLayout()
-        @drawTree()
+tweetVis = new TweetVis()
+tweetVis.init()
 
+treeBuilder = new TreeBuilder()
+treeBuilder.changeCallback = tweetVis.drawTree
 
-(new TweetVis()).main()
+tweetLoader = new TweetLoader()
+tweetLoader.tweetCallback = treeBuilder.addNode
+tweetLoader.getTweetTree()
 
