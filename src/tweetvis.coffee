@@ -46,7 +46,9 @@ class TweetLoader
         tweet.id = tweetDiv.attr('data-tweet-id')
         tweet.content = tweetDiv.select('.tweet-text').text()
         tweet.user = tweetDiv.attr('data-screen-name')
+        tweet.avatar = tweetDiv.select('.avatar').attr('src')
 
+        clog tweet
         return tweet
 
     populateTweetQueue: =>
@@ -134,30 +136,37 @@ class TweetVis
             .attr('height', 5000)
             .style('fill', 'white')
 
+        @svg.append('g')
+            .attr('id', 'edges')
+
+        @svg.append('g')
+            .attr('id', 'nodes')
+
 
     drawTree: (root) =>
         margin = @margin
         tree = d3.layout.tree().size([@width - 2*@margin, @height - 2*@margin])
-        clog root
         layout = tree.nodes(root)
-        clog root
         links = tree.links(layout)
 
-        nodeGroup = @svg.selectAll('.node')
+        nodeGroup = @svg.select('#nodes').selectAll('g')
            .data(layout, (d) -> d.id)
 
         enterNodes = nodeGroup.enter()
                 .append('g')
                 .attr('transform', (d) -> "translate(0 0)")
-                .classed('node', true)
 
         enterNodes.append('title')
             .text((d) -> "#{d.user}: #{d.content}")
 
-        enterNodes.append('circle')
-                .attr('r', 5)
+        enterNodes.append('image')
+                .attr('xlink:href', (d) -> d.avatar)
+                .attr('height', '48px')
+                .attr('width', '48px')
+                .attr('x', '-24px')
+                .attr('y', '-24px')
 
-        nodeGroup.transition().delay(3000)
+        nodeGroup
             .attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
 
         edgeToPath = ({source, target}) =>
@@ -165,17 +174,16 @@ class TweetVis
                          .y((d) => d.y + @margin)
                          .interpolate('linear')([source, target])
 
-        pathGroup = @svg.selectAll('.edge')
+        pathGroup = @svg.select('#edges').selectAll('path')
            .data(links, (d) -> d.target.id)
 
         pathGroup
            .enter()
                 .append('path')
-                .classed('edge', true)
                 .attr('d', (x) -> edgeToPath(x))
-                .attr('stroke', 'blue')
+                .attr('stroke', 'black')
 
-        pathGroup.transition().delay(3000)
+        pathGroup
                 .attr('d', (x) -> edgeToPath(x))
         
 
