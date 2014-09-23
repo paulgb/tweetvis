@@ -160,9 +160,12 @@ class TweetVis
         nodeGroup = @svg.select('#nodes').selectAll('g')
            .data(layout, (d) -> d.id)
 
+        nodeGroup
+            .attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
+
         enterNodes = nodeGroup.enter()
                 .append('g')
-                .attr('transform', (d) -> "translate(0 0)")
+                .attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
 
         enterNodes.append('title')
             .text((d) -> "#{d.user}: #{d.content}")
@@ -185,8 +188,6 @@ class TweetVis
                 .attr('rx', 5)
                 .attr('fill', 'none')
 
-        nodeGroup
-            .attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
 
         edgeToPath = ({source, target}) =>
             d3.svg.line().x((d) => d.x + @margin)
@@ -197,14 +198,15 @@ class TweetVis
            .data(links, (d) -> d.target.id)
 
         pathGroup
+            .attr('d', (x) -> edgeToPath(x))
+
+        pathGroup
            .enter()
                 .append('path')
                 .attr('d', (x) -> edgeToPath(x))
                 .attr('stroke', 'white')
                 .attr('stroke-width', '8px')
 
-        pathGroup
-                .attr('d', (x) -> edgeToPath(x))
         
 
 tweetVis = new TweetVis()
