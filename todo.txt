@@ -1,9 +1,11 @@
 
 Visual:
-    - darken background slightly, white border around avatars
+    X darken background slightly, white border around avatars
+    - transitions
     - thicken lines
     - smooth curvy lines
     - vertical scroll if goes outside page
+    - footer text
 
 Tweet Loading:
     - first cause all tweets to load

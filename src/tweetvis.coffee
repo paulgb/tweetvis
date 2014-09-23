@@ -129,18 +129,20 @@ class TweetVis
             .style('z-index', 1001)
             .attr('viewBox', "0 0 #{@width} #{@height}")
             
+        ###
         @svg.append('defs')
             .append('clipPath').attr('id', 'roundEdges')
             .append('rect').attr('width', '48px').attr('height', '48px')
             .attr('x', '-24px').attr('y', '-24px')
             .attr('rx', 8)
+        ###
 
         @svg.append('rect')
             .attr('x', -2500)
             .attr('y', -2500)
             .attr('width', 5000)
             .attr('height', 5000)
-            .style('fill', 'white')
+            .style('fill', '#ddd')
 
         @svg.append('g')
             .attr('id', 'edges')
@@ -171,7 +173,17 @@ class TweetVis
                 .attr('width', '48px')
                 .attr('x', '-24px')
                 .attr('y', '-24px')
-                .attr('clip-path', 'url(#roundEdges)')
+                #.attr('clip-path', 'url(#roundEdges)')
+
+        enterNodes.append('rect')
+                .attr('x', '-24px')
+                .attr('y', '-24px')
+                .attr('height', '48px')
+                .attr('width', '48px')
+                .attr('stroke', 'white')
+                .attr('stroke-width', '4px')
+                .attr('rx', 5)
+                .attr('fill', 'none')
 
         nodeGroup
             .attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
@@ -188,7 +200,8 @@ class TweetVis
            .enter()
                 .append('path')
                 .attr('d', (x) -> edgeToPath(x))
-                .attr('stroke', 'black')
+                .attr('stroke', 'white')
+                .attr('stroke-width', '8px')
 
         pathGroup
                 .attr('d', (x) -> edgeToPath(x))
