@@ -129,6 +129,12 @@ class TweetVis
             .style('z-index', 1001)
             .attr('viewBox', "0 0 #{@width} #{@height}")
             
+        @svg.append('defs')
+            .append('clipPath').attr('id', 'roundEdges')
+            .append('rect').attr('width', '48px').attr('height', '48px')
+            .attr('x', '-24px').attr('y', '-24px')
+            .attr('rx', 8)
+
         @svg.append('rect')
             .attr('x', -2500)
             .attr('y', -2500)
@@ -165,6 +171,7 @@ class TweetVis
                 .attr('width', '48px')
                 .attr('x', '-24px')
                 .attr('y', '-24px')
+                .attr('clip-path', 'url(#roundEdges)')
 
         nodeGroup
             .attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
