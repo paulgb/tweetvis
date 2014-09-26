@@ -74,8 +74,21 @@ class TweetLoader
     getTweetTree: =>
         @rootLocation = document.location.href
         @addRoot()
+        @scrollToBottom()
+
+    doneScrolling: =>
         @populateTweetQueue()
         @loadNextTweet()
+
+    scrollToBottom: =>
+        tle = d3.select '.timeline-end'
+        if tle.classed 'has-more-items'
+            clog 'scrolling'
+            window.scrollBy 0, 10000
+            setTimeout @scrollToBottom, 1000
+        else
+            clog 'done scrolling'
+            @doneScrolling()
 
     addRoot: =>
         tweet = @getMainTweet()

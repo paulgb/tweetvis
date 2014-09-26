@@ -16,3 +16,6 @@ Interaction:
     - support back button (popstate?)
     X show full tweet on hover (not just tooltip)
 
+Code:
+    - cleanup spacing into variables / constants
+
