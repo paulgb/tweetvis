@@ -7,24 +7,61 @@ window.d3 = d3
 clog = (m) ->
     console.__proto__.log.call(console, m)
 
-backdrop = (elems) ->
-    elems.each ->
-        elem = d3.select this
-        {height, width} = elem.node().getBBox()
-        p = d3.select(elem.node().parentNode)
-        p.insert('rect', ':first-child')
-            .classed('hoverReveal', true)
-            .attr('width', width + 12)
-            .attr('height', height + 12)
-            .attr('x', -6)
-            .attr('y', -6)
-            .attr('rx', 5)
-            .attr('fill', 'white')
+getCenter = (elem) ->
+    clog elem.getBoundingClientRect()
+    {height, width, x, y} = elem.getBoundingClientRect()
+    return [x + width/2, y + height/2]
+
+tooltip = (tweet) ->
+    #[x, y] = getCenter(this)
+    x = d3.select(this).attr('x')
+    y = d3.select(this).attr('y')
+    clog [x,y]
+
+    imageSize = 48
+    margin = 8
+
+    d3.select('#tweetPopup').remove()
+    tpop = d3.select('svg').append('g')
+            .attr('id', 'tweetPopup')
+
+    tpop.on 'mouseleave', ->
+        d3.select(this).remove()
+
+    text = tpop.append('text').text(tweet.content)
+            .attr('transform', "translate(#{imageSize+2*margin} 20)")
+
+    image = tpop.append('image')
+            .attr('xlink:href', tweet.avatar)
+            .attr('height', imageSize)
+            .attr('width', imageSize)
+            .attr('x', margin)
+            .attr('y', margin)
+
+    user = tpop.append('text')
+        .text("@#{tweet.name}")
+        .attr('font-weight', 'bold')
+        .attr('y', 12+margin)
+        .attr('x', imageSize + 2*margin)
+
+    wrap(text, 250)
+
+    {height, width} = tpop.node().getBBox()
+    console.log height, width, x, y
+
+    p=tpop.insert('rect', ':first-child')
+        .attr('width', width + 2*margin)
+        .attr('height', height + 2*margin)
+        .attr('fill', 'white')
+        .attr('rx', 5)
+    x -= (width/2 + margin)
+    y -= (height/2 + margin)
+
+    tpop.attr('transform', "translate(#{x} #{y})")
+    
 
 wrap = (text, width) ->
-  # adapted for CoffeeScript from http://bl.ocks.org/mbostock/7555321
-  text.each ->
-    text = d3.select this
+    # adapted for CoffeeScript from http://bl.ocks.org/mbostock/7555321
     words = text.text().split(/\s+/).reverse()
     line = []
     lineNumber = 0
@@ -33,7 +70,7 @@ wrap = (text, width) ->
     tspan = text.text(null)
                 .append("tspan")
                 .attr("dy", dy + "em")
-                .style('alignment-baseline', 'before-text')
+                #.style('alignment-baseline', 'before-text')
 
     while word = words.pop()
         line.push(word)
@@ -44,7 +81,8 @@ wrap = (text, width) ->
             line = [word]
             tspan = text.append("tspan")
                         .attr("x", '0px')
-                        .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                        #.attr("dy", ++lineNumber * lineHeight + dy + "em")
+                        .attr("dy", dy + 'em')
                         .text(word)
 
 
@@ -99,6 +137,7 @@ class TweetLoader
                     tweet.user = tweetDiv.attr('data-screen-name')
                     tweet.content = tweetDiv.select('.tweet-text').text()
                     tweet.avatar = tweetDiv.select('.avatar').attr('src')
+                    tweet.name = tweetDiv.attr('data-name')
 
                     @tweetCallback tweet
                     @processConversation()
@@ -160,23 +199,6 @@ class TweetVis
             .attr('height', '100%')
             .attr('width', '100%')
             
-        @svg.append('style')
-            .text('''
-            
-            #details rect.hoverCapture {
-                opacity: 0;
-            }
-
-            #details g .hoverReveal {
-                opacity: 0;
-            }
-
-            #details g:hover .hoverReveal {
-                opacity: 0.9;
-            }
-
-            ''')
-
         @svg.append('rect')
             .attr('x', -2500)
             .attr('y', -2500)
@@ -218,9 +240,14 @@ class TweetVis
         nodeGroup = d3.select('svg #nodes').selectAll('g')
            .data(@layout, (d) -> d.id)
         nodeGroup.attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)})")
+            .attr('x', (d) -> x(d.x))
+            .attr('y', (d) -> y(d.y))
 
         enterNodes = nodeGroup.enter().append('g')
                 .attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)})")
+                .on('mouseover', tooltip)
+                .attr('x', (d) -> x(d.x))
+                .attr('y', (d) -> y(d.y))
 
         enterNodes.append('image')
                 .attr('xlink:href', (d) -> d.avatar)
@@ -260,12 +287,13 @@ class TweetVis
                 .append('path')
                 .attr('d', (x) -> edgeToPath(x))
                 .attr('stroke', 'white')
-                .attr('stroke-width', '4px')
+                .attr('stroke-width', '2px')
 
         ###
         #   Draw (Hidden) Details Containers
         ###
         
+        ###
         detailsGroup = @svg.select('#details').selectAll('g')
             .data(@layout, (d) -> d.id)
 
@@ -289,7 +317,7 @@ class TweetVis
             .attr('fill', 'white')
 
         detailsGroup.attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)})")
-           
+        ###
         
 
 tweetVis = new TweetVis()
