@@ -22,11 +22,19 @@ tooltip = (tweet) ->
     margin = 8
 
     d3.select('#tweetPopup').remove()
-    tpop = d3.select('svg').append('g')
+
+    apop = d3.select('svg').append('a')
             .attr('id', 'tweetPopup')
+            .attr('xlink:href', tweet.url)
+            .attr('target', '_blank')
+            .style('text-decoration', 'none')
+
+    tpop = apop.append('g')
+            .attr('opacity', 0)
 
     tpop.on 'mouseleave', ->
-        d3.select(this).remove()
+        d3.select(this).transition().duration(200)
+            .attr('opacity', 0).remove()
 
     text = tpop.append('text').text(tweet.content)
             .attr('transform', "translate(#{imageSize+2*margin} 20)")
@@ -49,15 +57,17 @@ tooltip = (tweet) ->
     {height, width} = tpop.node().getBBox()
     console.log height, width, x, y
 
-    p=tpop.insert('rect', ':first-child')
+    tpop.insert('rect', ':first-child')
         .attr('width', width + 2*margin)
         .attr('height', height + 2*margin)
         .attr('fill', 'white')
         .attr('rx', 5)
+        .attr('opacity', 0.9)
     x -= (width/2 + margin)
     y -= (height/2 + margin)
 
     tpop.attr('transform', "translate(#{x} #{y})")
+    tpop.transition().duration(200).attr('opacity', 1)
     
 
 wrap = (text, width) ->
@@ -138,6 +148,7 @@ class TweetLoader
                     tweet.content = tweetDiv.select('.tweet-text').text()
                     tweet.avatar = tweetDiv.select('.avatar').attr('src')
                     tweet.name = tweetDiv.attr('data-name')
+                    tweet.url = "http://twitter.com/#{tweet.user}/status/#{tweet.id}"
 
                     @tweetCallback tweet
                     @processConversation()
@@ -198,6 +209,7 @@ class TweetVis
         @svg.attr('id', 'tweetvis_svg')
             .attr('height', '100%')
             .attr('width', '100%')
+            #.attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
             
         @svg.append('rect')
             .attr('x', -2500)
@@ -214,6 +226,7 @@ class TweetVis
 
         @svg.append('g')
             .attr('id', 'details')
+
 
 
     makeLayout: (root) =>
