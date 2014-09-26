@@ -111,7 +111,11 @@ class TweetLoader
         # method is responsible for initially populating the list.
         tweetQueue = []
         d3.selectAll('.simple-tweet')
-          .each -> tweetQueue.push d3.select(this).attr('data-tweet-id')
+          #.each -> tweetQueue.push d3.select(this).attr('data-tweet-id')
+            .each ->
+                this.click()
+                noe = d3.select(this).select('a.permalink-link').node()
+                tweetQueue.push noe
         @tweetQueue = tweetQueue
 
 
@@ -148,14 +152,18 @@ class TweetLoader
         if @tweetQueue.length == 0
             return
 
-        tweetId = @tweetQueue.shift()
+        cf = @tweetQueue.shift()
+        clog cf
+        cf.click()
+        clog 'here1'
 
-        tweetDiv = d3.select('div[data-tweet-id="'+tweetId+'"]')
+        #tweetDiv = d3.select('div[data-tweet-id="'+tweetId+'"]')
         
-        tweetDiv.node().click()
+        #tweetDiv.click()
 
-        detailsLink = tweetDiv.select 'a.permalink-link'
-        detailsLink.node().click()
+        #detailsLink = d3.select(tweetDiv).select 'a.permalink-link'
+        #detailsLink.node().click()
+
         @waitForLoad()
 
 

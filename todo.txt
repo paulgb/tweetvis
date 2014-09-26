@@ -8,13 +8,14 @@ Visual:
     - footer text
 
 Tweet Loading:
-    - first cause all tweets to load
+    X first cause all tweets to load
     - alert if not on tweet
 
 Interaction:
     - clickable tweets
     - support back button (popstate?)
     X show full tweet on hover (not just tooltip)
+    - deal with window resize
 
 Code:
     - cleanup spacing into variables / constants
