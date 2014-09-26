@@ -72,99 +72,68 @@ class TweetLoader
     doneCallback: null
 
     getTweetTree: =>
-        @rootLocation = document.location.href
-        @addRoot()
-        @scrollToBottom()
+        tweetDiv = d3.select '.permalink-tweet'
+        user = tweetDiv.attr 'data-screen-name'
+        tweetId = tweetDiv.attr 'data-tweet-id'
+        @tweetQueue = []
+        @getConversation user, tweetId
 
-    doneScrolling: =>
-        @populateTweetQueue()
-        @loadNextTweet()
+    
+    processConversation: =>
+        tweet = @tweetQueue.shift()
+        if tweet?
+            [tweetId, user] = tweet
+            url = "/#{user}/status/#{tweetId}"
+            clog url
+            d3.json(url)
+                .header('x-push-state-request', 'true')
+                .get (error, data) =>
+                    parser = new window.DOMParser()
+                    doc = parser.parseFromString data.page, 'text/html'
+                    doc = d3.select(doc)
 
-    scrollToBottom: =>
-        tle = d3.select '.timeline-end'
-        if tle.classed 'has-more-items'
-            clog 'scrolling'
-            window.scrollBy 0, 10000
-            setTimeout @scrollToBottom, 1000
-        else
-            clog 'done scrolling'
-            @doneScrolling()
+                    tweet = {}
+                    parentDiv = doc.select('#ancestors li:last-child div.simple-tweet')
+                    if not parentDiv.empty()
+                        tweet.parent = parentDiv.attr('data-tweet-id')
+                    tweetDiv = doc.select('.permalink-tweet')
+                    tweet.id = tweetDiv.attr('data-tweet-id')
+                    tweet.user = tweetDiv.attr('data-screen-name')
+                    tweet.text = tweetDiv.select('.tweet-text').text()
+                    tweet.avatar = tweetDiv.select('.avatar').attr('src')
 
-    addRoot: =>
-        tweet = @getMainTweet()
-        @tweetCallback tweet
-
-    getMainTweet: =>
-        tweetDiv = d3.select('div.permalink-tweet')
-
-        tweet = {}
-        tweet.id = tweetDiv.attr('data-tweet-id')
-        tweet.content = tweetDiv.select('.tweet-text').text()
-        tweet.user = tweetDiv.attr('data-screen-name')
-        tweet.avatar = tweetDiv.select('.avatar').attr('src')
-
-        clog tweet
-        return tweet
-
-    populateTweetQueue: =>
-        # tweetQueue is a list of tweet IDs yet-to-be processed. This
-        # method is responsible for initially populating the list.
-        tweetQueue = []
-        d3.selectAll('.simple-tweet')
-          #.each -> tweetQueue.push d3.select(this).attr('data-tweet-id')
-            .each ->
-                this.click()
-                noe = d3.select(this).select('a.permalink-link').node()
-                tweetQueue.push noe
-        @tweetQueue = tweetQueue
+                    #clog tweet
+                    @tweetCallback tweet
+                    @processConversation()
 
 
-    waitForLoad: =>
-        # wait for a tweet to load (the navigation event is initiated by
-        # the calling code) and then call processTweet
-        if document.location.href == @rootLocation
-            clog 'waiting...'
-            window.setTimeout(@waitForLoad, 1000)
-        else
-            clog 'loaded!'
-            window.setTimeout(@processTweet, 1000)
+    getMoreConversation: (user, tweetId, max_position) ->
+        url = "/i/#{user}/conversation/#{tweetId}?include_available_features=1&include_entities=1&max_position=#{max_position}"
+        d3.json(url)
+            .header('x-push-state-request', 'true')
+            .get (error, data) =>
+                parser = new window.DOMParser()
+                doc = parser.parseFromString data.items_html, 'text/html'
+                tweetQueue = @tweetQueue
+
+                d3.select(doc).selectAll('.simple-tweet').each ->
+                    replyDiv = d3.select this
+                    replyId = replyDiv.attr 'data-tweet-id'
+                    replyUser = replyDiv.attr 'data-screen-name'
+                    tweetQueue.push [replyId, replyUser]
+                    max_position = replyId
+
+                if data.has_more_items
+                    clog 'more'
+                    @getMoreConversation(user, tweetId, max_position)
+                else
+                    clog 'done'
+                    @processConversation()
 
 
-    processTweet: =>
-        # extract data from the tweet, call the callback, and then 
-        # call back and navigate to the next tweet
-        
-        tweet = @getMainTweet()
-
-        parentTweetDiv = d3.select('#ancestors li:last-child div.simple-tweet')
-        tweet.parent = parentTweetDiv.attr 'data-tweet-id'
-
-        @tweetCallback tweet
-
-        window.history.back()
-        window.setTimeout(@loadNextTweet, 1000)
-
-
-    loadNextTweet: =>
-        # process the next tweet in the queue, with a recursive call
-        # so that eventually the whole queue will be processed
-
-        if @tweetQueue.length == 0
-            return
-
-        cf = @tweetQueue.shift()
-        clog cf
-        cf.click()
-        clog 'here1'
-
-        #tweetDiv = d3.select('div[data-tweet-id="'+tweetId+'"]')
-        
-        #tweetDiv.click()
-
-        #detailsLink = d3.select(tweetDiv).select 'a.permalink-link'
-        #detailsLink.node().click()
-
-        @waitForLoad()
+    getConversation: (user, tweetId) ->
+        @tweetQueue.push([tweetId, user])
+        @getMoreConversation user, tweetId, 0
 
 
 
