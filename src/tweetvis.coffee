@@ -7,17 +7,19 @@ window.d3 = d3
 clog = (m) ->
     console.__proto__.log.call(console, m)
 
-backdrop = (elem) ->
-    {height, width} = elem.node().getBBox()
-    p = d3.select(elem.node().parentNode)
-    p.insert('rect', ':first-child')
-        .classed('hoverReveal', true)
-        .attr('width', width + 8)
-        .attr('height', height + 8)
-        .attr('x', '24px')
-        .attr('y', '-32px')
-        .attr('rx', 5)
-        .attr('fill', 'white')
+backdrop = (elems) ->
+    elems.each ->
+        elem = d3.select this
+        {height, width} = elem.node().getBBox()
+        p = d3.select(elem.node().parentNode)
+        p.insert('rect', ':first-child')
+            .classed('hoverReveal', true)
+            .attr('width', width + 12)
+            .attr('height', height + 12)
+            .attr('x', -6)
+            .attr('y', -6)
+            .attr('rx', 5)
+            .attr('fill', 'white')
 
 wrap = (text, width) ->
   # adapted for CoffeeScript from http://bl.ocks.org/mbostock/7555321
@@ -27,12 +29,9 @@ wrap = (text, width) ->
     line = []
     lineNumber = 0
     lineHeight = 1.1 # ems
-    dy = 0
-    y = '-14px'
+    dy = 1.1
     tspan = text.text(null)
                 .append("tspan")
-                .attr("x", '28px')
-                .attr("y", y)
                 .attr("dy", dy + "em")
                 .style('alignment-baseline', 'before-text')
 
@@ -44,8 +43,7 @@ wrap = (text, width) ->
             tspan.text(line.join(" "))
             line = [word]
             tspan = text.append("tspan")
-                        .attr("x", '28px')
-                        .attr("y", y)
+                        .attr("x", '0px')
                         .attr("dy", ++lineNumber * lineHeight + dy + "em")
                         .text(word)
 
@@ -102,7 +100,6 @@ class TweetLoader
                     tweet.content = tweetDiv.select('.tweet-text').text()
                     tweet.avatar = tweetDiv.select('.avatar').attr('src')
 
-                    #clog tweet
                     @tweetCallback tweet
                     @processConversation()
 
@@ -145,21 +142,23 @@ class TweetVis
         @makeSVG()
 
     makeSVG: =>
-        d3.select('#tweetvis_svg').remove()
+        d3.select('#tweetvis').remove()
         container = d3.select('body')
-        @width = window.innerWidth
-        @height = window.innerHeight
 
-        @svg = container.append('svg:svg')
-        @svg
-            .attr('id', 'tweetvis_svg')
+        div = container.append('div')
+            .attr('id', 'tweetvis')
             .style('position', 'fixed')
             .style('left', 0)
             .style('top', 0)
             .style('bottom', 0)
             .style('right', 0)
             .style('z-index', 1001)
-            .attr('viewBox', "0 0 #{@width} #{@height}")
+            .style('background-color', 'white')
+
+        @svg = div.append('svg:svg')
+        @svg.attr('id', 'tweetvis_svg')
+            .attr('height', '100%')
+            .attr('width', '100%')
             
         @svg.append('style')
             .text('''
@@ -173,7 +172,7 @@ class TweetVis
             }
 
             #details g:hover .hoverReveal {
-                opacity: 0.8;
+                opacity: 0.9;
             }
 
             ''')
@@ -195,78 +194,63 @@ class TweetVis
             .attr('id', 'details')
 
 
-
-    drawTree: (root) =>
-        margin = @margin
-        tree = d3.layout.tree().size([@width - 2*@margin, @height - 2*@margin])
-        layout = tree.nodes(root)
-        links = tree.links(layout)
-
-        nodeGroup = @svg.select('#nodes').selectAll('g')
-           .data(layout, (d) -> d.id)
+    makeLayout: (root) =>
+        #tree = d3.layout.tree().size([@width - 2*@margin, @height - 2*@margin])
+        tree = d3.layout.tree().size([1, 1])
+        @layout = tree.nodes(root)
+        @links = tree.links(@layout)
+        @drawTree()
 
 
-        enterNodes = nodeGroup.enter()
-                .append('g')
+    drawTree: =>
+        width = window.innerWidth
+        height = window.innerHeight
+        margin = 60
+        nodeSize = 24
 
-        nodeGroup
-            .attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
+        x = d3.scale.linear().range([margin, width - 2*margin])
+        y = d3.scale.linear().range([margin, height - 2*margin])
 
-        enterNodes.append('title')
-            .text((d) -> "#{d.user}: #{d.content}")
+        ###
+        #   Draw Nodes
+        ###
+
+        nodeGroup = d3.select('svg #nodes').selectAll('g')
+           .data(@layout, (d) -> d.id)
+        nodeGroup.attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)})")
+
+        enterNodes = nodeGroup.enter().append('g')
+                .attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)})")
 
         enterNodes.append('image')
                 .attr('xlink:href', (d) -> d.avatar)
-                .attr('height', '48px')
-                .attr('width', '48px')
-                .attr('x', '-24px')
-                .attr('y', '-24px')
+                .attr('height', "#{nodeSize}px")
+                .attr('width', "#{nodeSize}px")
+                .attr('x', "-#{nodeSize/2}px")
+                .attr('y', "-#{nodeSize/2}px")
+
 
         enterNodes.append('rect')
-                .attr('x', '-24px')
-                .attr('y', '-24px')
-                .attr('height', '48px')
-                .attr('width', '48px')
+                .attr('height', "#{nodeSize}px")
+                .attr('width', "#{nodeSize}px")
+                .attr('x', "-#{nodeSize/2}px")
+                .attr('y', "-#{nodeSize/2}px")
                 .attr('stroke', 'white')
-                .attr('stroke-width', '4px')
-                .attr('rx', 5)
+                .attr('stroke-width', '2px')
+                .attr('rx', "2px")
                 .attr('fill', 'none')
 
-
-
-        detailsGroup = @svg.select('#details').selectAll('g')
-            .data(layout, (d) -> d.id)
-
-        detailsEnter = detailsGroup.enter().append('g')
-        
-        detailsEnter.append('text')
-            .classed('hoverReveal', true)
-            .text((d) -> d.content)
-            .call(wrap, 200)
-            .call(backdrop)
-
-        detailsEnter.append('rect')
-            .classed('hoverCapture', true)
-            .attr('x', '-24px')
-            .attr('y', '-24px')
-            .attr('height', '48px')
-            .attr('width', '48px')
-            .attr('stroke', 'white')
-            .attr('stroke-width', '4px')
-            .attr('rx', 5)
-            .attr('fill', 'white')
-
-
-        detailsGroup.attr('transform', (d) -> "translate(#{d.x+margin} #{d.y+margin})")
-           
+        ###
+        #   Draw Edges
+        ###
 
         edgeToPath = ({source, target}) =>
-            d3.svg.line().x((d) => d.x + @margin)
-                         .y((d) => d.y + @margin)
+            d3.svg.line().x((d) => x(d.x))
+                         .y((d) => y(d.y))
                          .interpolate('linear')([source, target])
 
         pathGroup = @svg.select('#edges').selectAll('path')
-           .data(links, (d) -> d.target.id)
+           .data(@links, (d) -> d.target.id)
 
         pathGroup
             .attr('d', (x) -> edgeToPath(x))
@@ -276,15 +260,45 @@ class TweetVis
                 .append('path')
                 .attr('d', (x) -> edgeToPath(x))
                 .attr('stroke', 'white')
-                .attr('stroke-width', '8px')
+                .attr('stroke-width', '4px')
 
+        ###
+        #   Draw (Hidden) Details Containers
+        ###
+        
+        detailsGroup = @svg.select('#details').selectAll('g')
+            .data(@layout, (d) -> d.id)
+
+        detailsEnter = detailsGroup.enter().append('g')
+        
+        detailsEnter.append('g').attr('transform', 'translate(24 24)').append('text')
+            .classed('hoverReveal', true)
+            .text((d) -> d.content)
+            .call(wrap, 300)
+            .call(backdrop)
+
+        detailsEnter.append('rect')
+            .classed('hoverCapture', true)
+            .attr('x', "-#{nodeSize/2}px")
+            .attr('y', "-#{nodeSize/2}px")
+            .attr('height', "#{nodeSize}px")
+            .attr('width', "#{nodeSize}px")
+            .attr('stroke', 'white')
+            .attr('stroke-width', '4px')
+            .attr('rx', 5)
+            .attr('fill', 'white')
+
+        detailsGroup.attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)})")
+           
         
 
 tweetVis = new TweetVis()
 tweetVis.init()
 
 treeBuilder = new TreeBuilder()
-treeBuilder.changeCallback = tweetVis.drawTree
+treeBuilder.changeCallback = tweetVis.makeLayout
+
+window.onresize = tweetVis.drawTree
 
 tweetLoader = new TweetLoader()
 tweetLoader.tweetCallback = treeBuilder.addNode
