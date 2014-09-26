@@ -7,16 +7,10 @@ window.d3 = d3
 clog = (m) ->
     console.__proto__.log.call(console, m)
 
-getCenter = (elem) ->
-    clog elem.getBoundingClientRect()
-    {height, width, x, y} = elem.getBoundingClientRect()
-    return [x + width/2, y + height/2]
 
 tooltip = (tweet) ->
-    #[x, y] = getCenter(this)
     x = d3.select(this).attr('x')
     y = d3.select(this).attr('y')
-    clog [x,y]
 
     imageSize = 48
     margin = 8
@@ -130,7 +124,6 @@ class TweetLoader
         if tweet?
             [tweetId, user] = tweet
             url = "/#{user}/status/#{tweetId}"
-            clog url
             d3.json(url)
                 .header('x-push-state-request', 'true')
                 .get (error, data) =>
@@ -171,10 +164,8 @@ class TweetLoader
                     max_position = replyId
 
                 if data.has_more_items
-                    clog 'more'
                     @getMoreConversation(user, tweetId, max_position)
                 else
-                    clog 'done'
                     @processConversation()
 
 
