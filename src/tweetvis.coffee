@@ -99,7 +99,7 @@ class TweetLoader
                     tweetDiv = doc.select('.permalink-tweet')
                     tweet.id = tweetDiv.attr('data-tweet-id')
                     tweet.user = tweetDiv.attr('data-screen-name')
-                    tweet.text = tweetDiv.select('.tweet-text').text()
+                    tweet.content = tweetDiv.select('.tweet-text').text()
                     tweet.avatar = tweetDiv.select('.avatar').attr('src')
 
                     #clog tweet
