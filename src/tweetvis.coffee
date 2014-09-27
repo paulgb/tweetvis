@@ -94,17 +94,29 @@ class TreeBuilder
     changeCallback: null
     root: null
     idMap: {}
+    maxDepth: 0
+    widthMap: {}
+    maxWidth: 0
 
     addNode: (node) =>
         if 'parent' not of node
             @root = node
+            node.depth = 0
         else
             parent = @idMap[node.parent]
+            node.depth = parent.depth + 1
             if 'children' not of parent
                 parent.children = []
             parent.children.push(node)
+
+        if not @widthMap[node.depth]?
+            @widthMap[node.depth] = 0
+        @widthMap[node.depth] += 1
+        @maxWidth = Math.max @widthMap[node.depth], @maxWidth
+        @maxDepth = Math.max node.depth, @maxDepth
+        clog [@maxWidth, @maxDepth, node.depth]
         @idMap[node.id] = node
-        @changeCallback @root
+        @changeCallback @root, @maxWidth, @maxDepth
 
 
 class TweetLoader
@@ -220,8 +232,7 @@ class TweetVis
 
 
 
-    makeLayout: (root) =>
-        #tree = d3.layout.tree().size([@width - 2*@margin, @height - 2*@margin])
+    makeLayout: (root, @maxWidth, @depth) =>
         tree = d3.layout.tree().size([1, 1])
         @layout = tree.nodes(root)
         @links = tree.links(@layout)
@@ -233,6 +244,7 @@ class TweetVis
         height = window.innerHeight
         margin = 60
         nodeSize = 24
+        scale = 8 / Math.max(8, @maxWidth, @depth)
 
         x = d3.scale.linear().range([margin, width - 2*margin])
         y = d3.scale.linear().range([margin, height - 2*margin])
@@ -243,12 +255,12 @@ class TweetVis
 
         nodeGroup = d3.select('svg #nodes').selectAll('g')
            .data(@layout, (d) -> d.id)
-        nodeGroup.attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)})")
+        nodeGroup.attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)}) scale(#{scale})")
             .attr('x', (d) -> x(d.x))
             .attr('y', (d) -> y(d.y))
 
         enterNodes = nodeGroup.enter().append('g')
-                .attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)})")
+                .attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)}) scale(#{scale})")
                 .on('mouseover', tooltip)
                 .attr('x', (d) -> x(d.x))
                 .attr('y', (d) -> y(d.y))

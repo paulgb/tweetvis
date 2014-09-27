@@ -6,10 +6,13 @@ Visual:
     - smooth curvy lines
     - vertical scroll if goes outside page
     - footer text
+    X resize based on width and depth of tree
+    - colour links based on time delta
 
 Tweet Loading:
     X first cause all tweets to load
     - alert if not on tweet
+    - loading progress bar
 
 Interaction:
     X clickable tweets
