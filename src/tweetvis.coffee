@@ -99,6 +99,22 @@ wrap = (text, width) ->
                         .text(word)
 
 
+class LoadingIndicator
+    element: null
+
+    constructor: (parent) ->
+        @element = parent.append('p')
+            .style('position', 'absolute')
+            .style('bottom', '20px')
+            .style('right', '20px')
+
+    updateProgress: (num, denom) =>
+        @element.text "Loading (#{num}/#{denom})"
+
+    done: =>
+        @element.remove()
+
+
 class TreeBuilder
     changeCallback: null
     root: null
@@ -123,7 +139,6 @@ class TreeBuilder
         @widthMap[node.depth] += 1
         @maxWidth = Math.max @widthMap[node.depth], @maxWidth
         @maxDepth = Math.max node.depth, @maxDepth
-        clog [@maxWidth, @maxDepth, node.depth]
         @idMap[node.id] = node
         @changeCallback @root, @maxWidth, @maxDepth
 
@@ -131,6 +146,9 @@ class TreeBuilder
 class TweetLoader
     tweetCallback: null
     doneCallback: null
+    statusCallback: null
+    progNum: 0
+    progDenom: 1
 
     getTweetTree: =>
         tweetDiv = d3.select '.permalink-tweet'
@@ -164,8 +182,12 @@ class TweetLoader
                     tweet.name = tweetDiv.attr('data-name')
                     tweet.url = "http://twitter.com/#{tweet.user}/status/#{tweet.id}"
 
+                    @progNum++
+                    @statusCallback @progNum, @progDenom
                     @tweetCallback tweet
                     @processConversation()
+        else
+            @doneCallback()
 
 
     getMoreConversation: (user, tweetId, max_position) ->
@@ -176,6 +198,7 @@ class TweetLoader
                 parser = new window.DOMParser()
                 doc = parser.parseFromString data.items_html, 'text/html'
                 tweetQueue = @tweetQueue
+                i = 0
 
                 d3.select(doc).selectAll('.simple-tweet').each ->
                     replyDiv = d3.select this
@@ -183,7 +206,10 @@ class TweetLoader
                     replyUser = replyDiv.attr 'data-screen-name'
                     tweetQueue.push [replyId, replyUser]
                     max_position = replyId
+                    i++
 
+                @progDenom += i
+                @statusCallback 0, @progDenom
                 if data.has_more_items
                     @getMoreConversation(user, tweetId, max_position)
                 else
@@ -207,7 +233,7 @@ class TweetVis
         d3.select('#tweetvis').remove()
         container = d3.select('body')
 
-        div = container.append('div')
+        @div = container.append('div')
             .attr('id', 'tweetvis')
             .style('position', 'fixed')
             .style('left', 0)
@@ -215,20 +241,24 @@ class TweetVis
             .style('bottom', 0)
             .style('right', 0)
             .style('z-index', 1001)
-            .style('background-color', 'white')
+            .style('background-color', '#ddd')
 
-        @svg = div.append('svg:svg')
+        @div.append('p')
+            .style('position', 'absolute')
+            .style('bottom', '20px')
+            .style('left', '20px')
+            .html('''
+            Visualization by <a target="_blank" href="http://paulbutler.org">Paul Butler</a>
+            (<a target="_blank" href="https://twitter.com/paulgb">@paulgb</a>)
+            Made with <a target="_blank" href="http://d3js.org/">d3</a>.
+            <a target="_blank" href="https://github.com/paulgb/tweetvis">Source</a>
+            ''')
+
+        @svg = @div.append('svg:svg')
         @svg.attr('id', 'tweetvis_svg')
             .attr('height', '100%')
             .attr('width', '100%')
             
-        @svg.append('rect')
-            .attr('x', -2500)
-            .attr('y', -2500)
-            .attr('width', 5000)
-            .attr('height', 5000)
-            .style('fill', '#ddd')
-
         @svg.append('g')
             .attr('id', 'edges')
 
@@ -253,6 +283,7 @@ class TweetVis
         margin = 60
         nodeSize = 24
         scale = 8 / Math.max(8, @maxWidth, @depth)
+        animDuration = 300
 
         x = d3.scale.linear().range([margin, width - 2*margin])
         y = d3.scale.linear().range([margin, height - 2*margin])
@@ -263,7 +294,9 @@ class TweetVis
 
         nodeGroup = d3.select('svg #nodes').selectAll('g')
            .data(@layout, (d) -> d.id)
-        nodeGroup.attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)}) scale(#{scale})")
+        nodeGroup.transition()
+            .duration(animDuration)
+            .attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)}) scale(#{scale})")
             .attr('x', (d) -> x(d.x))
             .attr('y', (d) -> y(d.y))
 
@@ -279,7 +312,9 @@ class TweetVis
                 .attr('width', "#{nodeSize}px")
                 .attr('x', "-#{nodeSize/2}px")
                 .attr('y', "-#{nodeSize/2}px")
-
+                .attr('opacity', 0)
+                .transition().delay(animDuration)
+                .attr('opacity', 1)
 
         enterNodes.append('rect')
                 .attr('height', "#{nodeSize}px")
@@ -290,62 +325,46 @@ class TweetVis
                 .attr('stroke-width', '2px')
                 .attr('rx', "2px")
                 .attr('fill', 'none')
+                .attr('opacity', 0)
+                .transition().delay(animDuration)
+                .attr('opacity', 1)
 
         ###
         #   Draw Edges
         ###
 
         edgeToPath = ({source, target}) =>
-            d3.svg.line().x((d) => x(d.x))
-                         .y((d) => y(d.y))
-                         .interpolate('linear')([source, target])
+            startX = x(source.x)
+            startY = y(source.y)
+            endX = x(target.x)
+            endY = y(target.y)
+            "M#{startX},#{startY} C#{startX},#{startY} #{endX},#{startY} #{endX},#{endY}"
 
         pathGroup = @svg.select('#edges').selectAll('path')
            .data(@links, (d) -> d.target.id)
 
         pathGroup
-            .attr('d', (x) -> edgeToPath(x))
+            .transition().duration(animDuration)
+            .attr('d', edgeToPath)
+            .attr('opacity', 1)
 
         pathGroup
            .enter()
                 .append('path')
-                .attr('d', (x) -> edgeToPath(x))
+                .attr('d', edgeToPath)
+                .attr('fill', 'none')
                 .attr('stroke', 'white')
                 .attr('stroke-width', '2px')
+                .attr('opacity', 0)
+                .transition().delay(animDuration)
+                .attr('opacity', 1)
 
-        ###
-        #   Draw (Hidden) Details Containers
-        ###
-        
-        ###
-        detailsGroup = @svg.select('#details').selectAll('g')
-            .data(@layout, (d) -> d.id)
-
-        detailsEnter = detailsGroup.enter().append('g')
-        
-        detailsEnter.append('g').attr('transform', 'translate(24 24)').append('text')
-            .classed('hoverReveal', true)
-            .text((d) -> d.content)
-            .call(wrap, 300)
-            .call(backdrop)
-
-        detailsEnter.append('rect')
-            .classed('hoverCapture', true)
-            .attr('x', "-#{nodeSize/2}px")
-            .attr('y', "-#{nodeSize/2}px")
-            .attr('height', "#{nodeSize}px")
-            .attr('width', "#{nodeSize}px")
-            .attr('stroke', 'white')
-            .attr('stroke-width', '4px')
-            .attr('rx', 5)
-            .attr('fill', 'white')
-
-        detailsGroup.attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)})")
-        ###
         
 
 tweetVis = new TweetVis()
 tweetVis.init()
+
+loadingIndicator = new LoadingIndicator(tweetVis.div)
 
 treeBuilder = new TreeBuilder()
 treeBuilder.changeCallback = tweetVis.makeLayout
@@ -354,5 +373,7 @@ window.onresize = tweetVis.drawTree
 
 tweetLoader = new TweetLoader()
 tweetLoader.tweetCallback = treeBuilder.addNode
+tweetLoader.statusCallback = loadingIndicator.updateProgress
+tweetLoader.doneCallback = loadingIndicator.done
 tweetLoader.getTweetTree()
 

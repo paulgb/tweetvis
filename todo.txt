@@ -1,17 +1,17 @@
 
 Visual:
     X darken background slightly, white border around avatars
-    - transitions
+    X transitions
     X thicken lines
-    - smooth curvy lines
-    - footer text
+    X smooth curvy lines
+    X footer text
     X resize based on width and depth of tree
     - colour links based on time delta
 
 Tweet Loading:
     X first cause all tweets to load
     - alert if not on tweet
-    - loading progress bar
+    X loading progress bar
 
 Interaction:
     X clickable tweets
