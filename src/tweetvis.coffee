@@ -83,7 +83,6 @@ wrap = (text, width) ->
     tspan = text.text(null)
                 .append("tspan")
                 .attr("dy", dy + "em")
-                #.style('alignment-baseline', 'before-text')
 
     while word = words.pop()
         line.push(word)
@@ -94,7 +93,6 @@ wrap = (text, width) ->
             line = [word]
             tspan = text.append("tspan")
                         .attr("x", '0px')
-                        #.attr("dy", ++lineNumber * lineHeight + dy + "em")
                         .attr("dy", dy + 'em')
                         .text(word)
 
@@ -124,7 +122,7 @@ class TreeBuilder
     maxWidth: 0
 
     addNode: (node) =>
-        if 'parent' not of node or (not @idMap[node.parent])
+        if not @root?
             @root = node
             node.depth = 0
         else
@@ -180,7 +178,9 @@ class TweetLoader
                     tweet.content = tweetDiv.select('.tweet-text').text()
                     tweet.avatar = tweetDiv.select('.avatar').attr('src')
                     tweet.name = tweetDiv.attr('data-name')
+                    tweet.time = parseInt(tweetDiv.select('._timestamp').attr('data-time'))
                     tweet.url = "http://twitter.com/#{tweet.user}/status/#{tweet.id}"
+                    clog tweet
 
                     @progNum++
                     @statusCallback @progNum, @progDenom
@@ -241,7 +241,7 @@ class TweetVis
             .style('bottom', 0)
             .style('right', 0)
             .style('z-index', 1001)
-            .style('background-color', '#ddd')
+            .style('background-color', '#444')
 
         @div.append('p')
             .style('position', 'absolute')
@@ -288,12 +288,17 @@ class TweetVis
         x = d3.scale.linear().range([margin, width - 2*margin])
         y = d3.scale.linear().range([margin, height - 2*margin])
 
+        cs = d3.scale.sqrt()
+            .domain([0, 10800])
+            .range(['#ff5555', '#ffffff'])
+
         ###
         #   Draw Nodes
         ###
 
         nodeGroup = d3.select('svg #nodes').selectAll('g')
            .data(@layout, (d) -> d.id)
+
         nodeGroup.transition()
             .duration(animDuration)
             .attr('transform', (d) -> "translate(#{x(d.x)} #{y(d.y)}) scale(#{scale})")
@@ -353,7 +358,7 @@ class TweetVis
                 .append('path')
                 .attr('d', edgeToPath)
                 .attr('fill', 'none')
-                .attr('stroke', 'white')
+                .attr('stroke', (d) -> cs(d.target.time - d.source.time))
                 .attr('stroke-width', '2px')
                 .attr('opacity', 0)
                 .transition().delay(animDuration)

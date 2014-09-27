@@ -6,7 +6,7 @@ Visual:
     X smooth curvy lines
     X footer text
     X resize based on width and depth of tree
-    - colour links based on time delta
+    X colour links based on time delta
 
 Tweet Loading:
     X first cause all tweets to load
