@@ -4,7 +4,6 @@ Visual:
     - transitions
     X thicken lines
     - smooth curvy lines
-    - vertical scroll if goes outside page
     - footer text
     X resize based on width and depth of tree
     - colour links based on time delta
@@ -18,7 +17,7 @@ Interaction:
     X clickable tweets
     - support back button (popstate?)
     X show full tweet on hover (not just tooltip)
-    - deal with window resize
+    X deal with window resize
 
 Code:
     - cleanup spacing into variables / constants

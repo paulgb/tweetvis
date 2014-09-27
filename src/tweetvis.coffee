@@ -26,9 +26,6 @@ tooltip = (tweet) ->
     tpop = apop.append('g')
             .attr('opacity', 0)
 
-    tpop.on 'mouseleave', ->
-        d3.select(this).transition().duration(200)
-            .attr('opacity', 0).remove()
 
     text = tpop.append('text').text(tweet.content)
             .attr('transform', "translate(#{imageSize+2*margin} 20)")
@@ -59,6 +56,18 @@ tooltip = (tweet) ->
         .attr('opacity', 0.9)
     x -= (width/2 + margin)
     y -= (height/2 + margin)
+
+    sinkSize = 24
+    tpop.append('rect')
+        .attr('width', sinkSize)
+        .attr('height', sinkSize)
+        .attr('x', width/2 + margin - sinkSize/2)
+        .attr('y', height/2 + margin - sinkSize/2)
+        .style('cursor', 'none')
+        .attr('opacity', 0)
+        .on 'mouseleave', ->
+            d3.select(this.parentNode).transition().duration(200)
+                .attr('opacity', 0).remove()
 
     tpop.attr('transform', "translate(#{x} #{y})")
     tpop.transition().duration(200).attr('opacity', 1)
@@ -99,7 +108,7 @@ class TreeBuilder
     maxWidth: 0
 
     addNode: (node) =>
-        if 'parent' not of node
+        if 'parent' not of node or (not @idMap[node.parent])
             @root = node
             node.depth = 0
         else
@@ -212,7 +221,6 @@ class TweetVis
         @svg.attr('id', 'tweetvis_svg')
             .attr('height', '100%')
             .attr('width', '100%')
-            #.attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
             
         @svg.append('rect')
             .attr('x', -2500)
