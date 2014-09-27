@@ -282,7 +282,7 @@ class TweetVis
         height = window.innerHeight
         margin = 60
         nodeSize = 24
-        scale = 8 / Math.max(8, @maxWidth, @depth)
+        scale = 8 / Math.min(Math.max(8, @maxWidth, @depth), 24)
         animDuration = 300
 
         x = d3.scale.linear().range([margin, width - 2*margin])
