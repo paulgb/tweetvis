@@ -133,6 +133,8 @@ class TreeBuilder
             node.depth = 0
         else
             parent = @idMap[node.parent]
+            if not parent?
+                return
             node.depth = parent.depth + 1
             if 'children' not of parent
                 parent.children = []
@@ -153,6 +155,9 @@ class TweetLoader
     statusCallback: null
     progNum: 0
     progDenom: 1
+
+    testTweet: =>
+        not d3.select('.permalink-tweet').empty()
 
     getTweetTree: =>
         tweetDiv = d3.select '.permalink-tweet'
@@ -253,6 +258,7 @@ class TweetVis
             .style('position', 'absolute')
             .style('bottom', '20px')
             .style('left', '20px')
+            .style('color', '#ddd')
             .html('''
             Visualization by <a target="_blank" href="http://paulbutler.org">Paul Butler</a>
             (<a target="_blank" href="https://twitter.com/paulgb">@paulgb</a>)
@@ -301,14 +307,12 @@ class TweetVis
                 3600
                 10800
                 43200
-                86400
             ])
             .range([
                 '#FA5050'
                 '#E9FA50'
                 '#F5F1D3'
                 '#47D8F5'
-                '#1318BA'
             ])
 
         ###
@@ -383,21 +387,23 @@ class TweetVis
                 .transition().delay(animDuration)
                 .attr('opacity', 1)
 
-        
-
-tweetVis = new TweetVis()
-tweetVis.init()
-
-loadingIndicator = new LoadingIndicator(tweetVis.div)
-
-treeBuilder = new TreeBuilder()
-treeBuilder.changeCallback = tweetVis.makeLayout
-
-window.onresize = tweetVis.drawTree
 
 tweetLoader = new TweetLoader()
-tweetLoader.tweetCallback = treeBuilder.addNode
-tweetLoader.statusCallback = loadingIndicator.updateProgress
-tweetLoader.doneCallback = loadingIndicator.done
-tweetLoader.getTweetTree()
+
+if not tweetLoader.testTweet()
+    alert 'Not on a tweet; Navigate to a tweet and try again'
+else
+    tweetVis = new TweetVis()
+    tweetVis.init()
+
+    loadingIndicator = new LoadingIndicator(tweetVis.div)
+
+    treeBuilder = new TreeBuilder()
+    treeBuilder.changeCallback = tweetVis.makeLayout
+
+    window.onresize = tweetVis.drawTree
+    tweetLoader.tweetCallback = treeBuilder.addNode
+    tweetLoader.statusCallback = loadingIndicator.updateProgress
+    tweetLoader.doneCallback = loadingIndicator.done
+    tweetLoader.getTweetTree()
 
