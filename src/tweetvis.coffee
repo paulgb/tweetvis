@@ -48,12 +48,18 @@ tooltip = (tweet) ->
     {height, width} = tpop.node().getBBox()
     console.log height, width, x, y
 
+    hideTooltip = ->
+        apop.transition().duration(200)
+            .attr('opacity', 0).remove()
+
     tpop.insert('rect', ':first-child')
         .attr('width', width + 2*margin)
         .attr('height', height + 2*margin)
         .attr('fill', 'white')
         .attr('rx', 5)
         .attr('opacity', 0.9)
+        .on('mouseover', hideTooltip)
+
     x -= (width/2 + margin)
     y -= (height/2 + margin)
 
@@ -65,9 +71,9 @@ tooltip = (tweet) ->
         .attr('y', height/2 + margin - sinkSize/2)
         .style('cursor', 'none')
         .attr('opacity', 0)
-        .on 'mouseleave', ->
-            d3.select(this.parentNode).transition().duration(200)
-                .attr('opacity', 0).remove()
+        .on('mouseleave', hideTooltip)
+
+    #d3.select('#tweetvis').on('mouseover', hideTooltip)
 
     tpop.attr('transform', "translate(#{x} #{y})")
     tpop.transition().duration(200).attr('opacity', 1)
@@ -241,7 +247,7 @@ class TweetVis
             .style('bottom', 0)
             .style('right', 0)
             .style('z-index', 1001)
-            .style('background-color', '#444')
+            .style('background-color', '#222')
 
         @div.append('p')
             .style('position', 'absolute')
@@ -289,8 +295,21 @@ class TweetVis
         y = d3.scale.linear().range([margin, height - 2*margin])
 
         cs = d3.scale.sqrt()
-            .domain([0, 10800])
-            .range(['#ff5555', '#ffffff'])
+            .domain([
+                300
+                600
+                3600
+                10800
+                43200
+                86400
+            ])
+            .range([
+                '#FA5050'
+                '#E9FA50'
+                '#F5F1D3'
+                '#47D8F5'
+                '#1318BA'
+            ])
 
         ###
         #   Draw Nodes
