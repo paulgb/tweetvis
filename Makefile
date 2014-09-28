@@ -5,5 +5,5 @@ build/tweetvis.js : src/tweetvis.coffee
 
 serve : build/tweetvis.js
 	@echo "Bookmarklet: javascript:(function(){document.body.appendChild(document.createElement('script')).src='https://localhost:8080/tweetvis.js';})();"
-	cd build ; ../node_modules/.bin/http-server -S -C ../cert.pem -K ../key.pem
+	cd build ; ../node_modules/.bin/http-server -S -C ../keys/cert.pem -K ../keys/key.pem
 
