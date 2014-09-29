@@ -286,7 +286,7 @@ class TweetVis
             Visualization by <a target="_blank" href="http://paulbutler.org">Paul Butler</a>
             (<a target="_blank" href="https://twitter.com/paulgb">@paulgb</a>)
             Made with <a target="_blank" href="http://d3js.org/">d3</a>.
-            <a target="_blank" href="https://github.com/paulgb/tweetvis">Source</a>
+            <!--<a target="_blank" href="https://github.com/paulgb/tweetvis">Source</a>-->
             ''')
 
         clog @div.append('p').selectAll('span')
