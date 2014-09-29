@@ -4,12 +4,61 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Twitter Conversation Visualisation</title>
         <style>
+            body {
+                background-color: #ccc;
+                color: #333;
+                font-family: Georgia;
+            }
 
+            .content {
+                width: 600px;
+                margin: auto;
+            }
+
+            a {
+                color: #c22;
+                text-decoration: none;
+            }
+
+            a.button {
+                display: block;
+                color: white;
+                border-radius: 4px;
+                background-color: #c22;
+                padding: 8px 10px;
+                width: 150px;
+                text-align: center;
+                margin: 40px auto;
+            }
+
+            a.button:hover {
+                background-color: #a00;
+            }
         </style>
     </head>
     <body>
-        <h1>Twitter Conversation Visualization Bookmarklet</h1>
-        <img src="screenshot.png" style="width: 1193px; height: 607px" />
-        <a class="button" href="javascript:(function(){document.body.appendChild(document.createElement('script')).src='https://paulgb.github.io/tweetvis/tweetvis.js';})();">Visualise Tweets</a>
+        <div class="content">
+            <h1>Twitter Conversation Visualisation</h1>
+            <p>
+                Conversations on <a href="https://twitter.com">Twitter</a> have lives of their own;
+                one tweet can elicit many replies, each of which may itself have many replies.
+                Tracing the structure of these conversations in a tree-like visualisation is useful
+                for understanding the structure of these conversations, as well as following along
+                with complex discussion threads.
+            </p>
+            <p>
+                The visualization is implemented as a <a href="http://en.wikipedia.org/wiki/Bookmarklet">bookmarklet</a>
+                for Google Chrome. To use it, drag the button below to your Bookmarks toolbar
+                (you may have to make the bookmarks bar visible from the View menu first).</p>
+            <div>
+                <a class="button"
+                    onclick="alert('Don\'t click the button yet, first drag it to your bookmarks toolbar!');return false;"
+                    href="javascript:(function(){document.body.appendChild(document.createElement('script')).src='https://paulgb.github.io/tweetvis/tweetvis.js';})();">Visualise Tweets</a>
+            </div>
+            <div style="background-color: #222; padding: 20px 20px">
+                <img src="screenshot.png" style="width: 398px; height: 202px; display: block; margin: auto;" alt="Twitter visualisation screenshot" />
+                <p style="color: #eee; font-style: italic; text-align: right; margin-bottom: 0;">Screenshot</p>
+            </div>
+        </div>
     </body>
 </html>
