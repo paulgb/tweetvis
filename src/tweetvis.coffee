@@ -244,6 +244,9 @@ class TweetVis
         d3.select('#tweetvis').remove()
         container = d3.select('body')
 
+        d3.select(window).on('popstate',
+            -> d3.select('#tweetvis').remove())
+
         @div = container.append('div')
             .attr('id', 'tweetvis')
             .style('position', 'fixed')
