@@ -8,6 +8,26 @@ clog = (m) ->
     console.__proto__.log.call(console, m)
 
 
+timeColors =
+    intervals: [
+        300
+        600
+        3600
+        10800
+    ]
+    humanIntervals: [
+        '5 min'
+        '10 min'
+        '1 hour'
+        '3 hours+'
+    ]
+    colors: [
+        '#FA5050'
+        '#E9FA50'
+        '#F5F1D3'
+        '#47D8F5'
+    ]
+
 tooltip = (tweet) ->
     x = d3.select(this).attr('x')
     y = d3.select(this).attr('y')
@@ -111,6 +131,7 @@ class LoadingIndicator
             .style('position', 'absolute')
             .style('bottom', '20px')
             .style('right', '20px')
+            .style('color', '#ddd')
 
     updateProgress: (num, denom) =>
         @element.text "Loading (#{num}/#{denom})"
@@ -191,7 +212,6 @@ class TweetLoader
                     tweet.name = tweetDiv.attr('data-name')
                     tweet.time = parseInt(tweetDiv.select('._timestamp').attr('data-time'))
                     tweet.url = "http://twitter.com/#{tweet.user}/status/#{tweet.id}"
-                    clog tweet
 
                     @progNum++
                     @statusCallback @progNum, @progDenom
@@ -269,6 +289,21 @@ class TweetVis
             <a target="_blank" href="https://github.com/paulgb/tweetvis">Source</a>
             ''')
 
+        clog @div.append('p').selectAll('span')
+        @div.append('p')
+            .text('Reply times: ')
+            .style('position', 'absolute')
+            .style('top', '20px')
+            .style('left', '20px')
+            .style('color', '#ddd')
+            .selectAll('span')
+            .data(d3.zip(timeColors.humanIntervals, timeColors.colors))
+            .enter()
+            .append('span')
+                .text((d) -> d[0] + ' ')
+                .style('color', (d) -> d[1])
+                .style('margin-left', '20px')
+
         @svg = @div.append('svg:svg')
         @svg.attr('id', 'tweetvis_svg')
             .attr('height', '100%')
@@ -304,19 +339,8 @@ class TweetVis
         y = d3.scale.linear().range([margin, height - 2*margin])
 
         cs = d3.scale.sqrt()
-            .domain([
-                300
-                600
-                3600
-                10800
-                43200
-            ])
-            .range([
-                '#FA5050'
-                '#E9FA50'
-                '#F5F1D3'
-                '#47D8F5'
-            ])
+            .domain(timeColors.intervals)
+            .range(timeColors.colors)
 
         ###
         #   Draw Nodes
