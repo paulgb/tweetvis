@@ -1,13 +1,12 @@
 
 d3 = require 'd3'
 
-window.d3 = d3
-
 # twitter disables the console, but it's useful
 clog = (m) ->
     console.__proto__.log.call(console, m)
 
 
+# colours for the reply times
 timeColors =
     intervals: [
         300
@@ -29,6 +28,8 @@ timeColors =
     ]
 
 tooltip = (tweet) ->
+    # show a tooltip on tweet roll-over
+    
     x = d3.select(this).attr('x')
     y = d3.select(this).attr('y')
 
@@ -45,7 +46,6 @@ tooltip = (tweet) ->
 
     tpop = apop.append('g')
             .attr('opacity', 0)
-
 
     text = tpop.append('text').text(tweet.content)
             .attr('transform', "translate(#{imageSize+2*margin} 20)")
@@ -93,13 +93,12 @@ tooltip = (tweet) ->
         .attr('opacity', 0)
         .on('mouseleave', hideTooltip)
 
-    #d3.select('#tweetvis').on('mouseover', hideTooltip)
-
     tpop.attr('transform', "translate(#{x} #{y})")
     tpop.transition().duration(200).attr('opacity', 1)
     
 
 wrap = (text, width) ->
+    # wrap text inside a box
     # adapted for CoffeeScript from http://bl.ocks.org/mbostock/7555321
     words = text.text().split(/\s+/).reverse()
     line = []
@@ -180,6 +179,7 @@ class TweetLoader
     testTweet: =>
         not d3.select('.permalink-tweet').empty()
 
+
     getTweetTree: =>
         tweetDiv = d3.select '.permalink-tweet'
         user = tweetDiv.attr 'data-screen-name'
@@ -253,7 +253,6 @@ class TweetLoader
 
 
 
-
 class TweetVis
     margin: 100
 
@@ -286,7 +285,7 @@ class TweetVis
             Visualization by <a target="_blank" href="http://paulbutler.org">Paul Butler</a>
             (<a target="_blank" href="https://twitter.com/paulgb">@paulgb</a>)
             Made with <a target="_blank" href="http://d3js.org/">d3</a>.
-            <!--<a target="_blank" href="https://github.com/paulgb/tweetvis">Source</a>-->
+            <a target="_blank" href="https://github.com/paulgb/tweetvis">Source</a>
             ''')
 
         clog @div.append('p').selectAll('span')
@@ -317,7 +316,6 @@ class TweetVis
 
         @svg.append('g')
             .attr('id', 'details')
-
 
 
     makeLayout: (root, @maxWidth, @depth) =>
@@ -417,8 +415,10 @@ class TweetVis
 
 tweetLoader = new TweetLoader()
 
+
 if not tweetLoader.testTweet()
     alert 'Not on a tweet; Navigate to a tweet and try again'
+
 else
     tweetVis = new TweetVis()
     tweetVis.init()
