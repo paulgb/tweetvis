@@ -9233,7 +9233,7 @@
   this.d3 = d3;
 }();
 },{}],2:[function(require,module,exports){
-var LoadingIndicator, TreeBuilder, TweetLoader, TweetVis, clog, d3, loadingIndicator, tooltip, treeBuilder, tweetLoader, tweetVis, wrap,
+var LoadingIndicator, TreeBuilder, TweetLoader, TweetVis, clog, d3, loadingIndicator, timeColors, tooltip, treeBuilder, tweetLoader, tweetVis, wrap,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 d3 = require('d3');
@@ -9242,6 +9242,12 @@ window.d3 = d3;
 
 clog = function(m) {
   return console.__proto__.log.call(console, m);
+};
+
+timeColors = {
+  intervals: [300, 600, 3600, 10800],
+  humanIntervals: ['5 min', '10 min', '1 hour', '3 hours+'],
+  colors: ['#FA5050', '#E9FA50', '#F5F1D3', '#47D8F5']
 };
 
 tooltip = function(tweet) {
@@ -9301,7 +9307,7 @@ LoadingIndicator = (function() {
   function LoadingIndicator(parent) {
     this.done = __bind(this.done, this);
     this.updateProgress = __bind(this.updateProgress, this);
-    this.element = parent.append('p').style('position', 'absolute').style('bottom', '20px').style('right', '20px');
+    this.element = parent.append('p').style('position', 'absolute').style('bottom', '20px').style('right', '20px').style('color', '#ddd');
   }
 
   LoadingIndicator.prototype.updateProgress = function(num, denom) {
@@ -9418,7 +9424,6 @@ TweetLoader = (function() {
           tweet.name = tweetDiv.attr('data-name');
           tweet.time = parseInt(tweetDiv.select('._timestamp').attr('data-time'));
           tweet.url = "http://twitter.com/" + tweet.user + "/status/" + tweet.id;
-          clog(tweet);
           _this.progNum++;
           _this.statusCallback(_this.progNum, _this.progDenom);
           _this.tweetCallback(tweet);
@@ -9492,6 +9497,12 @@ TweetVis = (function() {
     });
     this.div = container.append('div').attr('id', 'tweetvis').style('position', 'fixed').style('left', 0).style('top', 0).style('bottom', 0).style('right', 0).style('z-index', 1001).style('background-color', '#222');
     this.div.append('p').style('position', 'absolute').style('bottom', '20px').style('left', '20px').style('color', '#ddd').html('Visualization by <a target="_blank" href="http://paulbutler.org">Paul Butler</a>\n(<a target="_blank" href="https://twitter.com/paulgb">@paulgb</a>)\nMade with <a target="_blank" href="http://d3js.org/">d3</a>.\n<a target="_blank" href="https://github.com/paulgb/tweetvis">Source</a>');
+    clog(this.div.append('p').selectAll('span'));
+    this.div.append('p').text('Reply times: ').style('position', 'absolute').style('top', '20px').style('left', '20px').style('color', '#ddd').selectAll('span').data(d3.zip(timeColors.humanIntervals, timeColors.colors)).enter().append('span').text(function(d) {
+      return d[0] + ' ';
+    }).style('color', function(d) {
+      return d[1];
+    }).style('margin-left', '20px');
     this.svg = this.div.append('svg:svg');
     this.svg.attr('id', 'tweetvis_svg').attr('height', '100%').attr('width', '100%');
     this.svg.append('g').attr('id', 'edges');
@@ -9519,7 +9530,7 @@ TweetVis = (function() {
     animDuration = 300;
     x = d3.scale.linear().range([margin, width - 2 * margin]);
     y = d3.scale.linear().range([margin, height - 2 * margin]);
-    cs = d3.scale.sqrt().domain([300, 600, 3600, 10800, 43200]).range(['#FA5050', '#E9FA50', '#F5F1D3', '#47D8F5']);
+    cs = d3.scale.sqrt().domain(timeColors.intervals).range(timeColors.colors);
 
     /*
      *   Draw Nodes
