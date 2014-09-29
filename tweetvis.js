@@ -9496,7 +9496,7 @@ TweetVis = (function() {
       return d3.select('#tweetvis').remove();
     });
     this.div = container.append('div').attr('id', 'tweetvis').style('position', 'fixed').style('left', 0).style('top', 0).style('bottom', 0).style('right', 0).style('z-index', 1001).style('background-color', '#222');
-    this.div.append('p').style('position', 'absolute').style('bottom', '20px').style('left', '20px').style('color', '#ddd').html('Visualization by <a target="_blank" href="http://paulbutler.org">Paul Butler</a>\n(<a target="_blank" href="https://twitter.com/paulgb">@paulgb</a>)\nMade with <a target="_blank" href="http://d3js.org/">d3</a>.\n<a target="_blank" href="https://github.com/paulgb/tweetvis">Source</a>');
+    this.div.append('p').style('position', 'absolute').style('bottom', '20px').style('left', '20px').style('color', '#ddd').html('Visualization by <a target="_blank" href="http://paulbutler.org">Paul Butler</a>\n(<a target="_blank" href="https://twitter.com/paulgb">@paulgb</a>)\nMade with <a target="_blank" href="http://d3js.org/">d3</a>.\n<!--<a target="_blank" href="https://github.com/paulgb/tweetvis">Source</a>-->');
     clog(this.div.append('p').selectAll('span'));
     this.div.append('p').text('Reply times: ').style('position', 'absolute').style('top', '20px').style('left', '20px').style('color', '#ddd').selectAll('span').data(d3.zip(timeColors.humanIntervals, timeColors.colors)).enter().append('span').text(function(d) {
       return d[0] + ' ';
