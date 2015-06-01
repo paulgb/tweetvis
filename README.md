@@ -7,3 +7,4 @@ just follow [these instructions](http://paulgb.github.io/tweetvis/).
 
 ![Tweetvis Screenshot](screenshot.png)
 
+MIT License.
